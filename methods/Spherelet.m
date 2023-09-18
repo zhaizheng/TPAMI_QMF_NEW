@@ -1,5 +1,7 @@
-function Output = Spherelet(DATA_TOBE, Data, k, d)
+function [Output,radius,C] = Spherelet(DATA_TOBE, Data, k, d)
     Output = zeros(size(DATA_TOBE));
+    C = zeros(size(DATA_TOBE));
+    radius = zeros(1,size(DATA_TOBE,2));
     for i = 1:size(Output,2)
         [~, ind] = sort(sum((Data-DATA_TOBE(:,i)).^2,1),'ascend');
         S = Data(:,ind(2:k+1));
@@ -13,8 +15,33 @@ function Output = Spherelet(DATA_TOBE, Data, k, d)
             pause;
         end
         Output(:,i) = res;
+        radius(i) = r;
+        C(:,i) = c;
     end
 end
+
+% 
+% function [c,r] = compute_spherelet_center(Y)
+% 
+%     c = mean(Y,2);
+%     r = sqrt(mean(sum((Y-c).^2,1)));
+%     while norm(center(Y,r)-c)>1.e-6
+%         c = center(Y,r);
+%         r = sqrt(mean(sum((Y-c).^2,1)));
+%         norm(center(Y,r)-c)
+%     end
+% end
+% 
+% 
+% function c = center(Y, r)
+%     c = zeros(size(Y,1),1);
+%     w = 0;
+%     for i = 1:size(Y,2)
+%         c = c + (norm(Y(:,i)-c)^2-r^2)*Y(:,i);
+%         w = w + (norm(Y(:,i)-c)^2-r^2);
+%     end
+%     c = c/w;
+% end
 
 function [c,r] = compute_spherelet_center(Y)
     center = mean(Y,2);
@@ -28,8 +55,9 @@ function [c,r] = compute_spherelet_center(Y)
     r = 0;
     n = size(Y,2);
     for j = 1:size(Y,2)
-        r = r+norm(Y(:,j)-c)/n;
+        r = r+norm(Y(:,j)-c)^2/n;
     end
+    r = sqrt(r); 
     if isnan(r)
         pause;
     end

@@ -2,7 +2,7 @@
 addpath('./../methods');
 
 %K = linspace(18,30,5);
-K = 13;%4:3:30;
+K = 4:3:30;
 
 data = build_sphere(0.2, 240);
 d = 2; D = 3;

@@ -33,7 +33,7 @@ for i = 1:length(kk)
     
     %%QUADRATIC APPROACH
     %Quadratic_Low_dimension = Quadratic_Manifold(k, low_dimension_noisy_data, low_dimension_noisy_data(:,1:NUM), D, d, tol);
-    delta = 50;
+    delta = 100;
     fprintf('Quadratic in Process:\n')
     W = diag(ones(1,size(low_dimension_noisy_data,2))); %n = 3*k;
     Quadratic_Low_dimension = quadratic(low_dimension_noisy_data,low_dimension_noisy_data(:,1:NUM),k, k, d, delta);
@@ -200,7 +200,7 @@ set(gca,'XTick',[], 'YTick', [])
 %%
 final_result = [];
 for i = 1:8
-    final_result = [final_result,[result(9,i,1),result(9,i,2)]];
+    final_result = [final_result,[result(:,i,1),result(:,i,2)]];
 end
 format_print(final_result)
 

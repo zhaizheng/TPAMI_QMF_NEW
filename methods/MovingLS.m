@@ -4,9 +4,9 @@ function re = MovingLS(Data, inputs, neig, d)
     Q = [];
     for i = 1:size(inputs,2)
         x = inputs(:,i);
-        h = find_sigma(x, Data, neig);
-        [q, ~, ~, U] = find_origin(x, Data, h, d);
-        result = Least_Fitting(Data, U, q, h);
+        [h, Datap] = find_sigma(x, Data, neig);
+        [q, ~, ~, U] = find_origin(x, Datap, h, d);
+        result = Least_Fitting(Datap, U, q, h);
         Result = [Result, result];
         Q = [Q,q];
     end
@@ -27,7 +27,7 @@ function [q, k, Q, C] = find_origin(x, Data, h, d)
         R = Data_c*Theta;
         Tau = U(:,1:d)'*R;
         Tau1 = [ones(1,size(Tau,2));Tau];
-        A = R*Tau1'/(Tau1*Tau1');
+        A = R*Tau1'*pinv(Tau1*Tau1');
         q_temp = q + A(:,1);
         [U,~] = qr(A(:,2:end));
         q_new = q_temp+U(:,1:d)*U(:,1:d)'*(x-q_temp);
@@ -46,7 +46,7 @@ function result = Least_Fitting(Data, U, q, h)
     Tau = U'*(Data-q);
     T = Construct_Higher_Order(Tau);
     Theta = (build_theta(Data, h, q)).^2;
-    A = Data*Theta*T'/(T*Theta*T');
+    A = Data*Theta*T'*pinv(T*Theta*T');
     result = A(:,1);
 end
 
@@ -77,7 +77,7 @@ function [U, center] = principal(Data, h, q, d)
 end
 
 
-function sigma = find_sigma(x, Data, k)
+function [sigma, Neig] = find_sigma(x, Data, k)
     s_distance = sum((Data-x).^2, 1);
     [~,ind] = sort(s_distance,'ascend');
     Neig = Data(:,ind(2:k+1)); 

@@ -9,56 +9,11 @@ cdata = data_n-x;
 dis = sum(cdata.^2,1) ;
 [~,ind] = sort(dis,'ascend');
 data = data_n(:,ind(2:20));
-
-for ss = 1:2
-    figure
-    t = tiledlayout(2,3,'TileSpacing','Compact');
-    Err = cell(1,3);
-    Time = cell(1,3);
-    d = 2;
-    Result = zeros(3,4);
-    for i = 1:3
-        t0 = clock;
-        [CS, err, P, Time{i}] = compare(data, d, approach{i}, choice{ss});
-        Err{i} = err;
-        fprintf('Method:%s,time:%f steps:%d, err:%f, ratio:%f \n',approach{i}, etime(clock,t0), length(Err{i}),Err{i}(end),sum(Time{i}(:,2)/sum(Time{i}(:,1))));
-        Result(i,:) = [etime(clock,t0), length(Err{i}), Err{i}(end), sum(Time{i}(:,2)/sum(Time{i}(:,1)))];
-        nexttile
-        plot3(data(1,:),data(2,:),data(3,:),'b*');
-        hold on
-        plot3(CS(1,:), CS(2,:),CS(3,:),'r*');
-        
-        hold on
-        S = ini(-0.30,0.30,20,2);
-        data_new = P*Construct_Higher_Order(S);
-        %plot(data_new(1,:),data_new(2,:),'-','linewidth',2);
-        A = reshape_s(data_new(1,:));
-        B = reshape_s(data_new(2,:));
-        C = reshape_s(data_new(3,:));
-        mesh(A,B,C)
-    end
-    for i = 1:3
-        nexttile
-        semilogy(Err{i}(1:10))
-    end
-endalter
+d = 2;
+[CS, err, P, Time] = compare_gradient(data,d);
 
 
-
-
-
-
-
-
-function [data_true, data] = generate_data(sigma, num)
-    theta = linspace(-pi/2, pi/2, num);%pi/4:0.1:3*pi/4;
-    data_true = [cos(theta);sin(theta)];
-    data = data_true+sigma*randn(2,length(theta));
-end
-
-
-
-function [CS, Err, R, Time] = compare(Data, d, alg, alg2)
+function [CS, Err, R, Time] = compare_gradient(Data, d)
     Tau = initial(Data, d);
     Err = [];
     iter = 1;
@@ -66,44 +21,29 @@ function [CS, Err, R, Time] = compare(Data, d, alg, alg2)
     Time = [];
     while true
         t1 = clock;
-        switch alg2 
-            case 'least_square'
-               R = Least(Data, Tau);   
-               [c, A, B] = R2abc(R, d);
-            case 'gradient'
-               s = 1; 
-               gR = gradient_R(Data, Tau, R);
-               while evaluate(Data, R-s*gR, Tau) > evaluate(Data, R, Tau)
-                   s = s/2;
-               end
-               R = R-s*gR;
-               [c, A, B] = R2abc(R, d);
+        gR = gradient_R(Data, Tau, R);
+        s = 1;
+        while evaluate(Data, R-s*gR, Tau) > evaluate(Data, R, Tau)
+           s = s/2;
         end
+        R_new = R-s*gR;
         time1 = etime(clock, t1);
         d = size(Tau, 1);
         Tau_old = Tau;
         t2 = clock;
+        [c, A, B] = R2abc(R, d);
         for i = 1:size(Data, 2)
-            switch alg
-                case 'alter'
-                    Tau(:,i) = projection(Data(:,i), A, B, c, Tau(:,i));
-                case 'gradient_optimal'
-                    [temp,~] = gradient_descent(Data(:,i), A, B, c, Tau(:,i));
-                    Tau(:,i) = temp;
-                case 'gradient'
-                    s = 1;
-                    g = gradient(Data(:,i), A, B, c, Tau(:,i));
-                    while f_value(Data(:,i), A, B, c, Tau(:,i)-s*g) > f_value(Data(:,i), A, B, c, Tau(:,i)) 
-                        s = s/2;
-                    end
-                    Tau(:,i) = Tau(:,i) - s*g;
+            s = 1;
+            g = gradient(Data(:,i), A, B, c, Tau(:,i));
+            while f_value(Data(:,i), A, B, c, Tau(:,i)-s*g) > f_value(Data(:,i), A, B, c, Tau(:,i)) 
+                s = s/2;
             end
-          
+            Tau(:,i) = Tau(:,i) - s*g;
         end
         time2 = etime(clock, t2);
         Tau_ee = qrs(Tau);
         Tau = Tau_ee(1:d,:);
-
+        R = R_new;
         CS = R *Construct_Higher_Order(Tau);
         error = norm(Data-CS,'fro').^2;
         Err = [Err,error];
